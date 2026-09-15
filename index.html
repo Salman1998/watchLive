@@ -1,9 +1,10 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Drive Video Player</title>
+    <title>Local Video Player</title>
 
     <style>
         body{
@@ -20,6 +21,7 @@
             font-size:16px;
             border:1px solid #ccc;
             border-radius:6px;
+            background:#fff;
         }
 
         button{
@@ -44,87 +46,138 @@
             aspect-ratio:16/9;
             margin-left:auto;
             margin-right:auto;
+            background:#000;
+            border-radius:10px;
+            overflow:hidden;
         }
 
-        iframe{
+        video{
             width:100%;
             height:100%;
-            border:none;
-            border-radius:10px;
+            display:block;
+            background:#000;
+            object-fit:contain;
         }
 
         .message{
             margin-top:15px;
             color:red;
         }
+
+        .file-name{
+            margin-top:10px;
+            color:#333;
+            font-size:14px;
+        }
     </style>
 </head>
+
 <body>
 
-<h2>Google Drive Video Player</h2>
+<h2>Local Video Player</h2>
 
 <input
-    type="text"
-    id="driveLink"
-    placeholder="Paste Google Drive Video Link Here">
+    type="file"
+    id="videoFile"
+    accept="video/*">
 
 <button onclick="loadVideo()">Load Video</button>
 
 <div class="message" id="message"></div>
 
+<div class="file-name" id="fileName"></div>
+
 <div class="player">
-    <iframe
-        id="videoFrame"
-        allow="autoplay"
-        allowfullscreen>
-    </iframe>
+    <video
+        id="videoPlayer"
+        controls
+        playsinline
+        preload="metadata">
+
+        Your browser does not support HTML5 video.
+
+    </video>
 </div>
 
 <script>
 
-function extractFileId(url){
-
-    const patterns = [
-        /\/file\/d\/([a-zA-Z0-9_-]+)/,
-        /id=([a-zA-Z0-9_-]+)/,
-        /\/d\/([a-zA-Z0-9_-]+)/
-    ];
-
-    for(const pattern of patterns){
-        const match = url.match(pattern);
-        if(match){
-            return match[1];
-        }
-    }
-
-    return null;
-}
+let currentVideoURL = null;
 
 function loadVideo(){
 
-    const input = document.getElementById("driveLink").value.trim();
+    const fileInput = document.getElementById("videoFile");
+    const video = document.getElementById("videoPlayer");
     const message = document.getElementById("message");
-    const frame = document.getElementById("videoFrame");
+    const fileName = document.getElementById("fileName");
 
     message.textContent = "";
+    fileName.textContent = "";
 
-    const fileId = extractFileId(input);
+    // Check if a file was selected
+    if(!fileInput.files || fileInput.files.length === 0){
 
-    if(!fileId){
-        message.textContent = "Invalid Google Drive link.";
+        message.style.color = "red";
+        message.textContent = "Please select a video file.";
+
         return;
     }
 
-    frame.src = `https://drive.google.com/file/d/${fileId}/preview`;
+    const file = fileInput.files[0];
+
+    // Check whether the selected file is a video
+    if(!file.type.startsWith("video/")){
+
+        message.style.color = "red";
+        message.textContent = "Please select a valid video file.";
+
+        return;
+    }
+
+    // Remove previous video URL
+    if(currentVideoURL){
+
+        URL.revokeObjectURL(currentVideoURL);
+
+    }
+
+    // Create temporary local URL
+    currentVideoURL = URL.createObjectURL(file);
+
+    // Load video
+    video.src = currentVideoURL;
+
+    video.load();
+
+    // Display file name
+    fileName.textContent = "Selected file: " + file.name;
+
+    message.style.color = "green";
+    message.textContent = "Video loaded successfully.";
+
+    // Try to start playback
+    video.play().catch(function(){
+
+        // Browser may block autoplay.
+        // User can press the Play button.
+        
+    });
+
 }
 
-// Example video on page load
-document.getElementById("driveLink").value =
-"https://drive.google.com/file/d/1yOMusFqAcjweEMx73XO5E4KScLzrzoBT/view?usp=sharing";
 
-loadVideo();
+// Automatically load video when a file is selected
+document.getElementById("videoFile").addEventListener("change", function(){
+
+    if(this.files.length > 0){
+
+        loadVideo();
+
+    }
+
+});
 
 </script>
 
 </body>
 </html>
+```
